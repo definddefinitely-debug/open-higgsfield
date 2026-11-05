@@ -1,4 +1,4 @@
-import { getModel } from "./catalog";
+import { getModel, missingRequired } from "./catalog";
 import type { GenerationPlane, PlatformPaths } from "./catalog/types";
 
 type Mapped = { path: string; body: Record<string, unknown> };
@@ -23,9 +23,22 @@ const MAP: Record<string, Mapper> = {
 
 export function toPlatform(plane: GenerationPlane): Mapped {
   const model = getModel(plane.model);
+  const missing = missingRequired(model, Object.values(plane.media).flat());
+  if (missing.length) {
+    throw new Error(`${model.label} needs ${listRoles(missing)}`);
+  }
   const map = MAP[model.id] ?? (model.paths ? (next) => mapByPaths(next, model.paths!) : undefined);
   if (!map) throw new Error(`No platform map for ${plane.model}`);
   return map(plane);
+}
+
+/** Reads as the sentence the composer shows: "a start frame", "a video and a
+    reference". Kept here rather than borrowed from the studio's labels so the
+    server bundle stays free of UI modules. */
+function listRoles(roles: readonly string[]): string {
+  const words = roles.map((role) => `a ${role}`);
+  if (words.length === 1) return words[0]!;
+  return `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
 }
 
 function urls(plane: GenerationPlane, role: "start" | "end" | "reference" | "video" | "audio") {

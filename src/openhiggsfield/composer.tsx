@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
-import { parseSettings } from "@/generation/catalog";
+import { missingRequired, parseSettings } from "@/generation/catalog";
 import type { ModelEntry, Surface } from "@/generation/catalog";
 import { MAX_BATCH, useActive } from "@/generation/stores/active";
 import { useImagePrompt, useVideoPrompt } from "@/generation/stores/prompt";
@@ -11,7 +11,7 @@ import { useSettings } from "@/generation/stores/settings";
 
 import { swatchFor } from "./artwork";
 import { AssetPicker } from "./asset-picker";
-import { PROMPT_PLACEHOLDERS, countSetting } from "./data";
+import { PROMPT_PLACEHOLDERS, ROLE_LABELS, countSetting } from "./data";
 import type { RunRecord } from "./history";
 import { ArrowUpIcon, CaretDownIcon, CloseIcon, MinusIcon, PlusIcon, WarningIcon } from "./icons";
 import { MediaStrip, useMediaTray } from "./media-tray";
@@ -92,9 +92,11 @@ export function Composer({
   const dockRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const promptRef = useRef<HTMLTextAreaElement>(null);
-  /* A run in flight is not a lock: it holds its own tile in the grid, so the
-     only thing that can stop a press is having nothing to say. */
-  const disabled = prompt.text.trim().length === 0;
+  /* A run in flight is not a lock: it holds its own tile in the grid. What does
+     stop a press is having nothing to say, or an endpoint that cannot run
+     without an input the plane does not carry yet. */
+  const missing = missingRequired(model, tray.items);
+  const disabled = prompt.text.trim().length === 0 || missing.length > 0;
 
   /* One batch control, two mechanisms. A model that declares its own
      results-per-request gets that setting written; the rest are submitted once
@@ -211,7 +213,13 @@ export function Composer({
   const attachLabel = tray.allFull ? "Change the inputs" : "Add an input";
   const settingKey = overlay?.startsWith(SETTING) ? overlay.slice(SETTING.length) : null;
   const generateLabel = batchValue > 1 ? `Generate ${batchValue} results` : "Generate";
-  const generateTip = disabled ? "Write a prompt first" : `${generateLabel} · ${shortcut ?? "⌘↵"}`;
+  /* The button says what pressing would do; the tip says what is in the way.
+     Naming the missing input beats a dead button the visitor has to guess at. */
+  const generateTip = missing.length
+    ? `Attach ${missing.map((role) => ROLE_LABELS[role].toLowerCase()).join(" and ")} first`
+    : prompt.text.trim().length === 0
+      ? "Write a prompt first"
+      : `${generateLabel} · ${shortcut ?? "⌘↵"}`;
 
   return (
     <div className="ohf-dock" ref={dockRef} data-selecting={selecting}>
