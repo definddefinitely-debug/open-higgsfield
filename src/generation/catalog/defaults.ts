@@ -3,9 +3,13 @@ import type { MediaRole, ModelEntry, PlatformPaths } from "./types";
 const IMAGE_ASPECT = ["auto", "1:1", "4:3", "3:4", "16:9", "9:16"] as const;
 const VIDEO_ASPECT = ["16:9", "9:16", "1:1"] as const;
 
+/** A text-to-video path and its image sibling. The variant is a segment, not a
+    suffix — LTX ships `.../text-to-video/fast`, and anchoring the swap to the
+    end of the string left those two models with no image path at all, so an
+    attached start frame was dropped and the run went out as text-only. */
 export function t2v(path: string): PlatformPaths {
-  if (!path.endsWith("/text-to-video")) return { text: path };
-  return { text: path, image: path.replace(/\/text-to-video$/, "/image-to-video") };
+  if (!path.includes("/text-to-video")) return { text: path };
+  return { text: path, image: path.replace("/text-to-video", "/image-to-video") };
 }
 
 export function imageModel(id: string, label: string, paths: PlatformPaths): ModelEntry {

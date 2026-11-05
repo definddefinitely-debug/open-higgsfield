@@ -57,6 +57,7 @@ export const kling3MotionStd: ModelEntry = {
   label: "Kling 3.0 Motion Control",
   roles: { start: 1, video: 1 },
   settings: klingMotionSettings,
+  required: ["video"],
 };
 
 export const kling3MotionPro: ModelEntry = {
@@ -65,4 +66,5 @@ export const kling3MotionPro: ModelEntry = {
   label: "Kling 3.0 Motion Control Pro",
   roles: { start: 1, video: 1 },
   settings: klingMotionSettings,
+  required: ["video"],
 };

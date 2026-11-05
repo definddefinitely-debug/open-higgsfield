@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# One run per branch; a push that supersedes an in-flight run cancels it.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Lint, types, tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Reads packageManager from package.json, so the version is pinned in one
+      # place and CI cannot drift from a contributor's machine.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+  build:
+    name: Production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # A green lint/type/test run is the interesting signal; building as well on
+    # every push would only queue behind it.
+    needs: check
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # next/font/google fetches Inter at build time, so this step needs egress
+      # to fonts.googleapis.com. A self-hosted or air-gapped runner fails here
+      # until the font is vendored with next/font/local.
+      - name: Build
+        run: pnpm build

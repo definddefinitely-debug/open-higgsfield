@@ -125,6 +125,21 @@ OPEN_HIGGSFIELD_READ_WRITE_TOKEN=     # Vercel Blob read-write token
 | `pnpm build` | Production build |
 | `pnpm start` | Serve the production build |
 | `pnpm brand` | Rebuild the icons and OG card in `public/` |
+| `pnpm lint` | ESLint over `src/` |
+| `pnpm typecheck` | `tsc --noEmit` over the whole tree |
+| `pnpm test` | Vitest, once |
+| `pnpm test:watch` | Vitest, watching |
+| `pnpm check` | All three of the above, in the order CI runs them |
+
+`pnpm check` is the gate: `.github/workflows/ci.yml` runs the same three steps on
+every push to `main` and on every pull request, then builds separately.
+
+The tests cover the logic that has no UI to exercise it — the catalog's own
+invariants, the catalog-to-platform mapping, settings resolution against a
+stale stored value, credential parsing, blob pathname sanitising, and run
+history. Adding a model means adding it to `src/generation/catalog/`; the
+catalog tests then hold its settings defaults, its required inputs and its
+platform path without a new test of their own.
 
 ---
 

@@ -29,7 +29,7 @@ import { recraft41 } from "./recraft-4.1";
 import { seedance2, seedance2Fast, seedance2Mini } from "./seedance-2";
 import { seedance25, seedance25Edit, seedance25Extend } from "./seedance-2.5";
 import { soul2, soulCinema } from "./soul";
-import type { ModelEntry } from "./types";
+import type { MediaItem, MediaRole, ModelEntry } from "./types";
 import { wan26 } from "./wan-2.6";
 import { wan27 } from "./wan-2.7";
 import { wan3 } from "./wan-3";
@@ -81,6 +81,16 @@ export function getModel(id: string): ModelEntry {
   const model = MODELS.find((entry) => entry.id === id);
   if (!model) throw new Error(`Unknown model: ${id}`);
   return model;
+}
+
+/** Roles this model cannot do without that carry no media yet. Shared by the
+    composer, which holds the press and names what is missing, and the mapper,
+    which refuses rather than submitting an endpoint without the one input it
+    exists to take. */
+export function missingRequired(model: ModelEntry, items: readonly MediaItem[]): MediaRole[] {
+  if (!model.required?.length) return [];
+  const held = new Set(items.map((item) => item.role));
+  return model.required.filter((role) => !held.has(role));
 }
 
 export type { GenerationPlane, MediaItem, MediaRole, ModelEntry, PlatformPaths, Surface } from "./types";
